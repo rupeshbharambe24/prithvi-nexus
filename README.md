@@ -1,73 +1,131 @@
-# Welcome to your Lovable project
+<div align="center">
 
-## Project info
+# PRITHVI-AI · Nexus (console prototype)
 
-**URL**: https://lovable.dev/projects/aa42214b-2fa1-4972-abfd-5be44d181cac
+### Early React console for the PRITHVI-AI climate-health early-warning platform
 
-## How can I edit this code?
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-000000?logo=shadcnui&logoColor=white)](https://ui.shadcn.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/status-superseded-lightgrey.svg)](https://github.com/rupeshbharambe24/prithvi-ai-frontend)
 
-There are several ways of editing your application.
+</div>
 
-**Use Lovable**
+> [!IMPORTANT]
+> **Superseded by [`prithvi-ai-frontend`](https://github.com/rupeshbharambe24/prithvi-ai-frontend).**
+> This repository is the original console codebase: it was scaffolded with Lovable in
+> November 2025 and then wired to the real [FastAPI backend](https://github.com/rupeshbharambe24/prithvi-ai-backend)
+> in March 2026. Development then continued in `prithvi-ai-frontend`, which shares this exact
+> commit history and adds the **Models** catalog page and a mock-free **Fairness** page.
+> It is kept for reference only.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/aa42214b-2fa1-4972-abfd-5be44d181cac) and start prompting.
+## Overview
 
-Changes made via Lovable will be committed automatically to this repo.
+PRITHVI-AI forecasts climate-driven health risks (heat stress, dengue-type disease, hospital
+ED surge and PM2.5) per region, with uncertainty bands, evidence and alerts. This repo is the
+operator console for that platform: a role-protected single-page app that calls the backend's
+`/api/v1` REST API through a small fetch wrapper (cookie auth, CSRF header, automatic token
+refresh and `X-Request-ID` tracing).
 
-**Use your preferred IDE**
+### Highlights
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Cookie + CSRF authentication with a refresh-and-retry fetch wrapper (`src/lib/api-client.ts`)
+- Five roles (`OrgAdmin`, `Epidemiologist`, `HospitalOps`, `FieldOfficer`, `Viewer`) and protected routes (`src/lib/rbac.ts`)
+- Risk dashboards for heat, disease, hospital surge and air quality backed by TanStack Query hooks (`src/hooks/use-api.ts`)
+- Knowledge-graph explorer (Cytoscape), evidence browser, dataset catalog with lineage
+- Scenario runner, fairness / drift reports and alert rules + acknowledgement
+- Light / dark / system theme (Zustand store) and English / Hindi strings (i18next)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Screens and routes
 
-Follow these steps:
+| Route | Screen | Access |
+|-------|--------|--------|
+| `/` | Landing page | public |
+| `/status` | Backend status check | public |
+| `/auth/login`, `/auth/signup` | Login / sign-up | public |
+| `/profile` | User profile | signed in |
+| `/console/overview` | Overview of all risk targets | signed in |
+| `/console/heat` | Heat risk | signed in |
+| `/console/disease` | Disease risk | signed in |
+| `/console/hospital` | Hospital surge | signed in |
+| `/console/air` | Air quality (PM2.5) | signed in |
+| `/console/scenario` | Scenario planner | signed in |
+| `/console/kg` | Knowledge graph explorer | signed in |
+| `/console/evidence` | Evidence list | signed in |
+| `/console/catalog` | Dataset catalog + lineage | signed in |
+| `/console/fairness` | Fairness and drift (falls back to sample data when no report exists) | signed in |
+| `/console/alerts` | Alerts and alert rules | signed in |
+| `/console/settings` | Settings | signed in |
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Architecture
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```mermaid
+flowchart LR
+    UI["React pages<br/>(src/pages)"] --> HOOKS["TanStack Query hooks<br/>(use-api.ts)"]
+    HOOKS --> CLIENT["api-client.ts<br/>cookies · CSRF · refresh"]
+    CLIENT -->|"/api/v1 (Vite proxy in dev)"| BE["prithvi-ai-backend<br/>FastAPI :8000"]
+    UI --> STORE["Zustand app store<br/>theme · region · lead time"]
+    UI --> RBAC["rbac.ts<br/>roles · protected routes"]
 ```
 
-**Edit a file directly in GitHub**
+## Tech stack
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+| Area | Libraries |
+|------|-----------|
+| Framework | React 18, TypeScript 5, Vite 5 (SWC) |
+| UI | Tailwind CSS, shadcn/ui (Radix), lucide-react, Framer Motion |
+| Data | TanStack Query, TanStack Table, Zustand |
+| Visualisation | Recharts (time series, p05/p95 bands), Cytoscape (knowledge graph) |
+| Forms / i18n | react-hook-form + zod, i18next |
 
-**Use GitHub Codespaces**
+## Getting started
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Prerequisites: Node.js 18+, and the [backend](https://github.com/rupeshbharambe24/prithvi-ai-backend) running on port 8000.
 
-## What technologies are used for this project?
+```bash
+npm install
+cp .env.example .env.local   # VITE_API_PREFIX=/api/v1, empty base URL uses the dev proxy
+npm run dev                  # http://localhost:5173 (proxies /api -> http://localhost:8000)
+```
 
-This project is built with:
+Other scripts: `npm run build`, `npm run preview`, `npm run lint`.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+The backend seeds a demo account (`admin@example.com` / `Admin123!`) in local mode.
 
-## How can I deploy this project?
+## Project structure
 
-Simply open [Lovable](https://lovable.dev/projects/aa42214b-2fa1-4972-abfd-5be44d181cac) and click on Share -> Publish.
+```text
+prithvi-nexus/
+├── public/                 robots.txt
+├── src/
+│   ├── pages/
+│   │   ├── console/        Overview, HeatRisk, DiseaseRisk, HospitalSurge, AirQuality,
+│   │   │                   Scenario, KnowledgeGraph, Evidence, Catalog, Fairness,
+│   │   │                   Alerts, Settings, Layout
+│   │   ├── auth/           Login, Signup
+│   │   └── Landing, Status, Profile, NotFound
+│   ├── components/
+│   │   ├── console/        ConsoleSidebar, ConsoleTopbar, RegionPicker, DateLeadPicker
+│   │   └── ui/             shadcn/ui primitives
+│   ├── hooks/              use-api (query/mutation hooks), use-toast, use-mobile
+│   ├── lib/                api-client, rbac, i18n, utils
+│   └── store/              appStore (Zustand)
+├── .env.example
+├── vite.config.ts          dev server :5173, /api proxy, lovable-tagger in dev mode
+└── package.json
+```
 
-## Can I connect a custom domain to my Lovable project?
+## Related repositories
 
-Yes, you can!
+| Repository | Role |
+|------------|------|
+| [`prithvi-ai`](https://github.com/rupeshbharambe24/prithvi-ai) | Umbrella repo (backend + frontend as submodules) |
+| [`prithvi-ai-backend`](https://github.com/rupeshbharambe24/prithvi-ai-backend) | FastAPI + XGBoost backend, data pipelines, continuous ML loop |
+| [`prithvi-ai-frontend`](https://github.com/rupeshbharambe24/prithvi-ai-frontend) | Current console (successor of this repo) |
+| **`prithvi-nexus`** | This repo: earlier console snapshot |
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## License
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+[MIT](LICENSE) © 2025 Rupesh Bharambe
